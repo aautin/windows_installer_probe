@@ -20,14 +20,6 @@ and installation of embedded MSI packages by intercepting MSI installation callb
 - NSIS installers
 - Inno Setup installers
 
-## Prerequisites
-
-**Note**: This project uses internal SBG Conan packages and may not be buildable outside the SBG network.
-
-Internal dependencies:
-- `conan sbg:install` command
-- `sbg-cmake-tools` (from `@sbg/stable` remote)
-
 ## Flowchart
 
 ```mermaid

@@ -12,9 +12,6 @@ class WindowsInstallerProbe(ConanFile):
 		deps.generate()
 		tc = CMakeToolchain(self)
 		tc.generate()
-
-	def build_requirements(self):
-		self.test_requires("sbg-cmake-tools/[>=1.14]@sbg/stable")
  
 	def layout(self):
 		cmake_layout(self)
