@@ -45,6 +45,11 @@ Generated\ Files/
 [Tt]est[Rr]esult*/
 [Bb]uild[Ll]og.*
 
+# CMake, Conan and build generated files
+CMakeUserPresets.json
+build/
+out/
+
 # NUnit
 *.VisualState.xml
 TestResult.xml
