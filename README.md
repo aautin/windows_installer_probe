@@ -4,7 +4,7 @@ A Qt-based application that replicates the Windows Installer UI GUI/CLI by integ
 
 ## Overview
 
-This application provides a custom installation UI that works with an EXE bootstrappers, automatic extraction
+This application provides a custom installation UI that works with an EXE bootstrapper, automatic extraction
 and installation of embedded MSI packages by intercepting MSI installation callbacks.
 
 ## Supported Formats
