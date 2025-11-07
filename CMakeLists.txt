@@ -11,6 +11,9 @@ find_package(Qt6 REQUIRED COMPONENTS Widgets Quick Core Gui) # Qt Components
 # Executable
 add_executable(${PROJECT_NAME} main.cpp) # Add source files
 target_link_libraries(${PROJECT_NAME} PRIVATE Qt6::Widgets Qt6::Core Qt6::Gui) # Link libraries
+if (WIN32)
+    target_link_libraries(${PROJECT_NAME} PRIVATE msi)
+endif()
 
 # Windows deployment
 if (WIN32)

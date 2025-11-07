@@ -1,6 +1,11 @@
 #include <QCommandLineParser>
 #include <QCommandLineOption>
 #include <QDebug>
+#include <QProcess>
+#include <QTemporaryDir>
+
+#include <windows.h>
+#include <msi.h>
 
 static void install(const QString& bootstrapper, const QString& installPath) {
 	qDebug() << "Installing bootstrapper:" << bootstrapper << "to path:" << installPath;
@@ -37,6 +42,29 @@ int main(int argc, char* argv[]) {
 		qCritical() << "Error: exactly one bootstrapper file must be specified";
 		parser.showHelp(1);
 	}
+
+	//
+	// Boostrapper extraction
+	//
+	/*QTemporaryDir extractionDirectory;
+	if (!extractionDirectory.isValid()) {
+		qCritical() << "Error: could not create temporary extraction directory:"
+			<< extractionDirectory.errorString();
+		return EXIT_FAILURE;
+	}*/
+	
+	MsiInstallProductA(argv[1], NULL);
+
+	QFileInfo bootstrapperFileInfo(arguments.at(0));
+	if (!bootstrapperFileInfo.isExecutable()) {
+		qCritical() << "Error:" << arguments.at(0) << "is not executable.";
+		return EXIT_FAILURE;
+	}
+
+	/*QProcess extraction;
+	auto args = QStringList()
+		<< bootstrapperFile.fileName()
+		<< extractionDirectory.path() + "/expanded_file";*/
 
 	//
 	// Installation process
