@@ -5,7 +5,7 @@ class WindowsInstallerProbe(ConanFile):
 	settings = 'os', 'compiler', 'build_type', 'arch'
 	
 	def requirements(self):
-		self.requires('qt-binaries/6.7.3')
+		self.requires('qt/6.7.3')
 	
 	def generate(self):
 		deps = CMakeDeps(self)
