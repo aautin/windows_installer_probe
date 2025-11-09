@@ -1,14 +1,15 @@
+#include <QCoreApplication>
 #include <QCommandLineParser>
 #include <QCommandLineOption>
 #include <QDebug>
 #include <QProcess>
 #include <QTemporaryDir>
+#include <QString>
 
 #include <windows.h>
 #include <msi.h>
 
-static void install(const QString& bootstrapper, const QString& installPath) {
-	qDebug() << "Installing bootstrapper:" << bootstrapper << "to path:" << installPath;
+static void install(const QStringList& msiFiles, const QString& installPath) {
 	// Implementation of the installation logic goes here
 }
 
@@ -38,38 +39,48 @@ int main(int argc, char* argv[]) {
 	}
 
 	auto arguments = parser.positionalArguments();
-	if (arguments.size() != 1) {
+	if (arguments.size() !=1) {
 		qCritical() << "Error: exactly one bootstrapper file must be specified";
 		parser.showHelp(1);
 	}
 
 	//
-	// Boostrapper extraction
+	// Bootstrapper file check
 	//
-	/*QTemporaryDir extractionDirectory;
-	if (!extractionDirectory.isValid()) {
-		qCritical() << "Error: could not create temporary extraction directory:"
-			<< extractionDirectory.errorString();
-		return EXIT_FAILURE;
-	}*/
-	
-	MsiInstallProductA(argv[1], NULL);
-
 	QFileInfo bootstrapperFileInfo(arguments.at(0));
 	if (!bootstrapperFileInfo.isExecutable()) {
 		qCritical() << "Error:" << arguments.at(0) << "is not executable.";
 		return EXIT_FAILURE;
 	}
 
-	/*QProcess extraction;
-	auto args = QStringList()
-		<< bootstrapperFile.fileName()
-		<< extractionDirectory.path() + "/expanded_file";*/
+	//
+	// Boostrapper extraction
+	//
+	QTemporaryDir extractionDirectory;
+	QString extractionPath = QDir::toNativeSeparators(extractionDirectory.path());
+
+	QString script = "& { Start-Process -FilePath $args[0] -ArgumentList $args[1],$args[2],$args[3] -Wait }";
+	QStringList psArgs;
+	psArgs 
+		<< "-Command" << script << "--" << bootstrapperFileInfo.absoluteFilePath()
+		<< "/exenoui" << "/extract" << extractionPath;
+
+	QProcess extractor;
+	extractor.start("powershell.exe", psArgs);
+	if (!extractor.waitForFinished()) {
+	    qCritical() << "Extraction timed out. process state:" << extractor.state() << "error:" << extractor.error();
+	    qDebug() << extractor.readAll();
+	    return EXIT_FAILURE;
+	}
+	if (extractor.exitCode() != 0) {
+	    qCritical() << "Extraction failed, exit code:" << extractor.exitCode();
+	    return EXIT_FAILURE;
+	}
 
 	//
 	// Installation process
 	//
-	install(arguments.at(0), parser.value("install-path"));
+	install(QDir(extractionPath).entryList(QDir::Files | QDir::Dirs | QDir::NoDotAndDotDot), parser.value("install-path"));
 
 	return EXIT_SUCCESS;
 }
