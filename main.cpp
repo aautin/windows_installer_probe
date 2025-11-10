@@ -5,12 +5,64 @@
 #include <QProcess>
 #include <QTemporaryDir>
 #include <QString>
+#include <QMessageBox>
 
 #include <windows.h>
 #include <msi.h>
 
+static int _stdcall UIHandler(LPVOID pvContext, UINT iMessageType, LPCSTR szMessage)
+{
+	switch ((INSTALLMESSAGE)(0xFF000000 & (UINT)iMessageType)) {
+
+	case INSTALLMESSAGE_PROGRESS:
+		qDebug() << "Progress:" << QString::fromUtf8(szMessage);
+		break;
+	case INSTALLMESSAGE_ERROR:
+		qDebug() << "Error:" << QString::fromUtf8(szMessage);
+		break;
+	/*case INSTALLMESSAGE_INFO:
+		qDebug() << "Info:" << QString::fromUtf8(szMessage);
+		break;*/
+	case INSTALLMESSAGE_FATALEXIT:
+		qDebug() << "Fatalexit:" << QString::fromUtf8(szMessage);
+		break;
+	case INSTALLMESSAGE_WARNING:
+		qDebug() << "Warning:" << QString::fromUtf8(szMessage);
+		break;
+	case INSTALLMESSAGE_USER:
+		qDebug() << "User:" << QString::fromUtf8(szMessage);
+		break;
+	}
+	return IDOK;
+}
+
 static void install(const QStringList& msiFiles, const QString& installPath) {
+	QString appdir = QString("APPDIR=\"%1\"").arg(QDir::toNativeSeparators(QDir(installPath).absolutePath()));
 	// Implementation of the installation logic goes here
+	qDebug() << "Installing :" << msiFiles;
+	qDebug() << "Msi arg :" << appdir;
+
+	MsiSetInternalUI(INSTALLUILEVEL_NONE, nullptr);
+	MsiSetExternalUIA(UIHandler,
+		INSTALLLOGMODE_PROGRESS | INSTALLLOGMODE_FATALEXIT | INSTALLLOGMODE_ERROR |
+		INSTALLLOGMODE_WARNING | INSTALLLOGMODE_USER | INSTALLLOGMODE_INFO |
+		INSTALLLOGMODE_FILESINUSE | INSTALLLOGMODE_RESOLVESOURCE |
+		INSTALLLOGMODE_OUTOFDISKSPACE | INSTALLLOGMODE_ACTIONSTART |
+		INSTALLLOGMODE_ACTIONDATA | INSTALLLOGMODE_COMMONDATA,
+		nullptr);
+
+	for (const QString& msiFile : msiFiles) {
+		
+		UINT result = MsiInstallProductW(
+			reinterpret_cast<LPCWSTR>(msiFile.utf16()),
+			reinterpret_cast<LPCWSTR>(appdir.utf16())
+		);
+		if (result != ERROR_SUCCESS) {
+			qCritical() << "Installation of" << msiFile << "failed with error code:" << result;
+		} else {
+			qDebug() << "Installation of" << msiFile << "completed successfully.";
+		}
+	}
 }
 
 int main(int argc, char* argv[]) {
@@ -78,9 +130,22 @@ int main(int argc, char* argv[]) {
 	}
 
 	//
+	// Installation path check
+	//
+	QDir installDir(parser.value("install-path"));
+	if (!installDir.exists()) {
+		if (!installDir.mkpath(".")) {
+			qCritical() << "Error: could not create installation path" << installDir.absolutePath();
+			return EXIT_FAILURE;
+		}
+	}
+
+	//
 	// Installation process
 	//
-	install(QDir(extractionPath).entryList(QDir::Files | QDir::Dirs | QDir::NoDotAndDotDot), parser.value("install-path"));
+	auto msiFiles = QDir(extractionPath).entryList(QStringList() << "*.msi", QDir::Files | QDir::Dirs | QDir::NoDotAndDotDot);
+	for (QString& msiFile : msiFiles) msiFile = QDir::toNativeSeparators(QDir(extractionPath).absoluteFilePath(msiFile));
+	install(msiFiles, parser.value("install-path"));
 
 	return EXIT_SUCCESS;
 }
