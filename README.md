@@ -33,3 +33,8 @@ flowchart TD
     G --> H["MsiInstallProduct avec<br/>chemin du MSI extrait"]
     H --> I["Nettoyage fichiers temporaires"]
 ```
+
+## Prerequisites
+
+- Conan Package Manager
+- CMake
